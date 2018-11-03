@@ -42,9 +42,9 @@ func main() {
 	dst := imaging.New(ptX, ptY, color.RGBA{0, 0, 0, 0})
 	for x := 0; x < outShift; x++ {
 		for y := 0; y < outShift; y++ {
-			dstK, dstC, dstCM, dstCMY := convertAndShiftAllImages(K, C, M, Y, ptX/outShift, (5/outShift)*2)
+			dstImg := convertAndShiftAllImages(K, C, M, Y, ptX/outShift, (5/outShift)*2)
 			newP := image.Point{p.X * x, p.Y * y}
-			dst = combineAllImages(frames, dst, dstK, dstC, dstCM, dstCMY, newP)
+			dst = combineAllImages(frames, dst, dstImg, newP)
 		}
 	}
 	log.Printf("Number of frames: %v\n", len(frames))
@@ -53,24 +53,15 @@ func main() {
 func combineAllImages(
 	f []*image.NRGBA,
 	dst *image.NRGBA,
-	dstK *image.RGBA,
-	dstC *image.RGBA,
-	dstCM *image.RGBA,
-	dstCMY *image.RGBA,
+	dstImg [4]*image.RGBA,
 	p image.Point) *image.NRGBA {
 
-	dst = imaging.Paste(dst, dstK, p)
-	f = append(f, dst)
-	save(strconv.Itoa(p.X)+"_"+strconv.Itoa(p.Y)+"_0", dst)
-	dst = imaging.Paste(dst, dstC, p)
-	f = append(f, dst)
-	save(strconv.Itoa(p.X)+"_"+strconv.Itoa(p.Y)+"_1", dst)
-	dst = imaging.Paste(dst, dstCM, p)
-	f = append(f, dst)
-	save(strconv.Itoa(p.X)+"_"+strconv.Itoa(p.Y)+"_2", dst)
-	dst = imaging.Paste(dst, dstCMY, p)
-	f = append(f, dst)
-	save(strconv.Itoa(p.X)+"_"+strconv.Itoa(p.Y)+"_3", dst)
+	for i, img := range dstImg {
+		dst = imaging.Paste(dst, img, p)
+		f = append(f, dst)
+		str := strconv.Itoa(p.X) + "_" + strconv.Itoa(p.Y) + "_" + strconv.Itoa(i)
+		save(str, dst)
+	}
 	return dst
 }
 
@@ -79,7 +70,7 @@ func convertAndShiftAllImages(
 	C image.Image,
 	M image.Image,
 	Y image.Image,
-	s, o int) (*image.RGBA, *image.RGBA, *image.RGBA, *image.RGBA) {
+	s, o int) [4]*image.RGBA {
 
 	C = imaging.Resize(C, s, 0, imaging.Lanczos)
 	Y = imaging.Resize(Y, s, 0, imaging.Lanczos)
@@ -107,7 +98,7 @@ func convertAndShiftAllImages(
 	dstCM := blend.Multiply(dstC, fM)
 	dstCMY := blend.Multiply(dstCM, fY)
 
-	return dstK, dstC, dstCM, dstCMY
+	return [4]*image.RGBA{dstK, dstC, dstCM, dstCMY}
 }
 
 // func rgbaToAlpha(img *image.RGBA) *image.Alpha {

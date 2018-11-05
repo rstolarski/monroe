@@ -8,5 +8,13 @@ github.com/disintegration/gift v1.2.0 h1:VMQeei2F+ZtsHjMgP6Sdt1kFjRhs2lGz8ljEOPe
 github.com/disintegration/gift v1.2.0/go.mod h1:Jh2i7f7Q2BM7Ezno3PhfezbR1xpUg9dUg3/RlKGr4HI=
 github.com/disintegration/imaging v1.5.0 h1:uYqUhwNmLU4K1FN44vhqS4TZJRAA4RhBINgbQlKyGi0=
 github.com/disintegration/imaging v1.5.0/go.mod h1:9B/deIUIrliYkyMTuXJd6OUFLcrZ2tf+3Qlwnaf/CjU=
+github.com/gen2brain/x264-go v0.0.0-20180306035800-58f586137654 h1:RNpogAT5Qz69YLIu6+92q5sSw61PjjhDj4upH2el5pk=
+github.com/gen2brain/x264-go v0.0.0-20180306035800-58f586137654/go.mod h1:17kvfYQKi9/QHiKPeqmJW0YuDPZEgy72tSBVmweSyiE=
+github.com/gqf2008/codec v0.0.0-20130311030225-4a7ed9cf7268 h1:FlqUkQ2lbqGpAkZ4NDwFfZVOrobyNvlMctAvPMj1Xhs=
+github.com/gqf2008/codec v0.0.0-20130311030225-4a7ed9cf7268/go.mod h1:8yuPC2TU4kfYrLL7sEatONKWrGyMaGl/lIMwXKTEq7k=
+github.com/leelynne/mp4 v0.0.0-20141204065451-81e7aad03b15 h1:5KM7Pa5j1bULdNVXIPemuX8rmvIGMDlIvZGZaxEQvIE=
+github.com/leelynne/mp4 v0.0.0-20141204065451-81e7aad03b15/go.mod h1:n2uFPB19E5VsAfzaJszqQ7P8Ai2aKKQ2W9QNHFvgTwU=
+github.com/lnsoso/mp4 v0.0.0-20130312064725-8f85b7e81e85 h1:HlFeHkoD9um//amcIXvQ14Az2yBt2Usv23cipb4Zuko=
+github.com/lnsoso/mp4 v0.0.0-20130312064725-8f85b7e81e85/go.mod h1:51cB2NnYrKNvHzGJvPT7MmOZvZ3NdqesbnDVRSu9dJA=
 golang.org/x/image v0.0.0-20180926015637-991ec62608f3 h1:5IfA9fqItkh2alJW94tvQk+6+RF9MW2q9DzwE8DBddQ=
 golang.org/x/image v0.0.0-20180926015637-991ec62608f3/go.mod h1:ux5Hcp/YLpHSI86hEcLt0YII63i6oz57MZXIpbrjZUs=

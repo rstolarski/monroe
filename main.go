@@ -8,9 +8,10 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/anthonynsimon/bild/adjust"
 
 	"github.com/disintegration/imaging"
 
@@ -28,49 +29,59 @@ const outPath = "img/"
 
 const loops = 6
 
-const fps = 1
-const saving = false
+const fps = 25
 
 func main() {
+	//b := bytes.NewBuffer()
 	bgColor := color.RGBA{249, 92, 137, 255} // magenta
-	//bgColor := color.RGBA{82, 145, 188, 255} //cyan
+	bgColor = color.RGBA{82, 145, 188, 255}  //cyan
 
-	pt := image.Point{read(inputPath + "mask").Bounds().Max.X, read(inputPath + "mask").Bounds().Max.Y}
 	var f []*image.RGBA
 	for i := 1; i < loops; i += 2 {
-		f = append(f, mainLoop(i, fps, bgColor)...)
-		f = append(f, selectMask(i, fps, f[len(f)-1], pt)...)
-		save(fmt.Sprintf("lastFrame", i), f[len(f)-1])
+		f = append(f, mainLoop(i, bgColor)...)
 	}
-	log.Printf("Number of frames: %v\n", len(f))
-	fmt.Printf("Exporting frames\n")
+	numberOfFrames := len(f)
+	log.Printf("Number of frames: %v\n", numberOfFrames)
+	log.Printf("Exporting frames\n")
 	for i, img := range f {
 		save(fmt.Sprintf("%06d", i), img)
 	}
 }
 
-func selectMask(outShift, fps int, frame *image.RGBA, pt image.Point) []*image.RGBA {
+// func check(e error) {
+// 	if e != nil {
+// 		panic(e)
+// 	}
+// }
+
+func selectMask(outShift int, pt image.Point) *image.RGBA {
 	rX := random(0, outShift)
 	rand.Seed(time.Now().UTC().UnixNano())
 	rY := random(0, outShift)
 
 	anchor := image.Point{(pt.X / outShift) * rX, (pt.Y / outShift) * rY}
 
-	mask := rgbaToAlpha(toRGBA(read(inputPath + "mask")))
+	mask := read(inputPath + "mask")
 	dst := imaging.New(pt.X, pt.Y, color.RGBA{0, 0, 0, 0})
 	maksDst := imaging.Resize(mask, pt.X/outShift, 0, imaging.Lanczos)
 	maksDst = imaging.Paste(dst, maksDst, anchor)
 	log.Printf("x,y: %v,%v", anchor.X, anchor.Y)
-
-	//	save("mask_test"+strconv.Itoa(pt.X)+"_"+strconv.Itoa(pt.Y)+"_", dst)
-	return []*image.RGBA{toRGBA(maksDst)}
+	return toRGBA(maksDst)
 }
 
-func mainLoop(outShift, fps int, bgColor color.RGBA) []*image.RGBA {
+func changeHueToRandom(img *image.RGBA) *image.RGBA {
+	c := random(0, 36)
+	return adjust.Hue(img, c*10)
+}
+
+func mainLoop(outShift int, bgColor color.RGBA) []*image.RGBA {
 	C := read(inputPath + "cyan")
 	Y := read(inputPath + "yellow")
 	M := read(inputPath + "magenta")
 	K := read(inputPath + "black")
+
+	//m := read(inputPath + "mask").Bounds().Max
+	//_ = m
 
 	var f []*image.RGBA
 	var tempF []*image.NRGBA
@@ -81,19 +92,51 @@ func mainLoop(outShift, fps int, bgColor color.RGBA) []*image.RGBA {
 	dst := imaging.New(ptX, ptY, bgColor)
 	for x := 0; x < outShift; x++ {
 		for y := 0; y < outShift; y++ {
-			dstImg := convertAndShiftAllImages(K, C, M, Y, ptX/outShift, 0, 5)
-
-			newP := image.Point{p.X * x, p.Y * y}
-			dst, tempF = combineAllImages(f, dst, dstImg, newP)
+			dstImg := convertAndShiftAllImages(K, C, M, Y, ptX/outShift, 0, 1)
+			dst, tempF = combineAllImages(f, dst, dstImg, image.Point{p.X * x, p.Y * y})
 			for _, i := range tempF {
 				img := setBG(bgColor, toRGBA(i))
-				for n := 0; n < fps; n++ {
-					f = append(f, img)
-				}
+				//for n := 0; n < fps; n++ {
+				f = append(f, img)
+				//}
 			}
 		}
 	}
+	final := toRGBA(dst)
+	//for i := 0; i < fps; i++ {
+	f = append(f, setBG(bgColor, final))
+	//}
+
+	for i := 0; i < outShift*outShift; i++ {
+		mask := selectMask(outShift, image.Point{C.Bounds().Max.X, C.Bounds().Max.Y})
+		mask = changeHueToRandom(maskRGBA(final, mask))
+		final = combineMaskedWithFinalFrame(final, mask)
+		final = setBG(bgColor, final)
+		//for n := 0; n < fps; n++ {
+		f = append(f, final)
+		//}
+	}
+
+	//for i := 0; i < fps; i++ {
+	f = append(f, final)
+	//	}
 	return f
+}
+
+func combineMaskedWithFinalFrame(f, m *image.RGBA) *image.RGBA {
+	r := image.NewRGBA(f.Bounds())
+	for y := 0; y < f.Bounds().Max.Y; y++ {
+		for x := 0; x < f.Bounds().Max.X; x++ {
+			mC := m.RGBAAt(x, y)
+			fC := f.RGBAAt(x, y)
+			if mC.A != 0 && fC.A != 0 {
+				r.SetRGBA(x, y, mC)
+			} else {
+				r.SetRGBA(x, y, fC)
+			}
+		}
+	}
+	return r
 }
 
 func combineAllImages(
@@ -103,13 +146,9 @@ func combineAllImages(
 	p image.Point) (*image.NRGBA, []*image.NRGBA) {
 
 	var frames []*image.NRGBA
-	for i, img := range dstImg {
+	for _, img := range dstImg {
 		dst = imaging.Paste(dst, img, p)
 		frames = append(frames, dst)
-		if saving {
-			str := strconv.Itoa(p.X) + "_" + strconv.Itoa(p.Y) + "_" + strconv.Itoa(i)
-			save(str, dst)
-		}
 	}
 	return dst, frames
 }
@@ -205,30 +244,48 @@ func toRGBA(img image.Image) *image.RGBA {
 	return out
 }
 
-func invert(img *image.Alpha) *image.Alpha {
+func toAlpha(img image.Image) *image.Alpha {
+	out := image.NewAlpha(img.Bounds())
 	for y := 0; y < img.Bounds().Max.Y; y++ {
 		for x := 0; x < img.Bounds().Max.X; x++ {
-			img.SetAlpha(x, y, color.Alpha{255 - img.AlphaAt(x, y).A})
+			oldColor := img.At(x, y)
+			color := color.AlphaModel.Convert(oldColor)
+			out.Set(x, y, color)
+		}
+	}
+	return out
+}
+
+func invert(img *image.RGBA) *image.RGBA {
+	for y := 0; y < img.Bounds().Max.Y; y++ {
+		for x := 0; x < img.Bounds().Max.X; x++ {
+			img.SetRGBA(x, y, color.RGBA{
+				255 - img.RGBAAt(x, y).R,
+				255 - img.RGBAAt(x, y).G,
+				255 - img.RGBAAt(x, y).B,
+				255,
+			})
 		}
 	}
 	return img
 }
 
-// func maskRGBA(img *image.RGBA, mask *image.Alpha) *image.RGBA {
-// 	for y := 0; y < img.Bounds().Max.Y; y++ {
-// 		for x := 0; x < img.Bounds().Max.X; x++ {
-// 			alpha := mask.AlphaAt(x, y).A
-// 			color := color.NRGBA{
-// 				img.RGBAAt(x, y).R,
-// 				img.RGBAAt(x, y).G,
-// 				img.RGBAAt(x, y).B,
-// 				alpha,
-// 			}
-// 			img.Set(x, y, color)
-// 		}
-// 	}
-// 	return img
-// }
+func maskRGBA(img, mask *image.RGBA) *image.RGBA {
+	out := image.NewRGBA(img.Bounds())
+	for y := 0; y < img.Bounds().Max.Y; y++ {
+		for x := 0; x < img.Bounds().Max.X; x++ {
+			alpha := mask.RGBAAt(x, y).A
+			color := color.NRGBA{
+				img.RGBAAt(x, y).R,
+				img.RGBAAt(x, y).G,
+				img.RGBAAt(x, y).B,
+				alpha,
+			}
+			out.Set(x, y, color)
+		}
+	}
+	return out
+}
 
 func read(input string) image.Image {
 	img, err := imgio.Open(input + ".png")
@@ -241,7 +298,7 @@ func read(input string) image.Image {
 func save(output string, image image.Image) {
 	err := os.MkdirAll(outPath, 0777)
 	if err != nil {
-		fmt.Errorf("MkdirAll %q: %s", outPath, err)
+		log.Fatalf("MkdirAll %q: %s", outPath, err)
 	}
 	f, err := os.Create(outPath + output + ".jpg")
 	if err != nil {

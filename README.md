@@ -1,12 +1,7 @@
-# Project Title
+# Marilyn Diptych
 
-One Paragraph of project description goes here
-
-## Getting Started
-
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
-
-
+This app generates procedurally short animation of Marilyn Monroe faces being printed.
+This was a task at Lodz Universoty of Technology in one of classes.
 
 ## Installation
 
@@ -57,4 +52,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-* Krzysztof Guzek
+* Marta Osowicz - for proposing first version of this idea
+* Krzysztof Guzek - for guidance during class

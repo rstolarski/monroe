@@ -22,9 +22,6 @@ import (
 	"github.com/anthonynsimon/bild/transform"
 )
 
-// TODO Get new mask
-// TODO Make sure that all images in sequence are colorized
-
 const inputPath = "resources/CMYK_split/"
 const width = 1280
 const height = 720
@@ -45,15 +42,9 @@ func appednInLoop(f []*image.RGBA, isLooping bool) []*image.RGBA {
 }
 
 func main() {
-
-	// if _, err := os.Stat("out.mp4"); !os.IsNotExist(err) {
-	// 	fmt.Printf("Cleaning previously created movie\n")
-	// 	runCommand(exec.Command("rm", "out.mp4"))
-	// }
-
 	bgColor := color.RGBA{249, 92, 137, 255} // magenta
 	bgColor = color.RGBA{82, 145, 188, 255}  //cyan
-	//	var f []*image.RGBA
+
 	var f1 []*image.RGBA
 	var f2 []*image.RGBA
 	var f3 []*image.RGBA
@@ -68,19 +59,20 @@ func main() {
 	f3 = append(f3, zoomOut(lastSmall, lastBig)...)
 	col := colorize(f3[len(f3)-1], bgColor, pt, 5)
 
-	fmt.Printf("Number of frames: %v\n", len(f1)+len(f2)+len(f3)+len(col))
-	fmt.Printf("Exporting frames\n")
+	log.Printf("Number of frames: %v\n", len(f1)+len(f2)+len(f3)+len(col))
+	log.Printf("Exporting frames\n")
 
 	saveGroup(f1, pt, bgColor, "temp/f1/")
 	saveGroup(f2, pt, bgColor, "temp/f2/")
 	saveGroup(f3, pt, bgColor, "temp/f3/")
 	saveGroup(col, pt, bgColor, "temp/col/")
 
-	fmt.Printf("Saving images: 100.00 \n")
-	fmt.Printf("Images were saved\n")
+	log.Printf("Saving images: 100.00 \n")
+	log.Printf("Images were saved\n")
 
 	b := []byte("file 'f1.mp4'\nfile 'f2.mp4'\nfile 'f3.mp4'\nfile 'col.mp4'\n")
 	f, err := os.Create("temp/mylist.txt")
+	defer f.Close()
 	if err != nil {
 		panic(err)
 	}
@@ -88,20 +80,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("wrote %d bytes\n", n)
-	defer f.Close()
+	_ = n
 }
 func saveGroup(f []*image.RGBA, pt image.Point, bgColor color.RGBA, outPath string) {
 	bg := toRGBA(imaging.New(width, height, bgColor))
 	if generateFullSize {
 		for i, img := range f {
 			save(outPath, fmt.Sprintf("%06d", i), paste(bg, img, image.Point{(width - pt.X) / 2, (height - pt.Y) / 2}))
-			fmt.Printf("Saving images: %.2f \n", float64(i)/float64(len(f))*100)
+			log.Printf("Saving images: %.2f \n", float64(i)/float64(len(f))*100)
 		}
 	} else {
 		for i, img := range f {
 			save(outPath, fmt.Sprintf("%06d", i), img)
-			fmt.Printf("Saving images: %.2f \n", float64(i)/float64(len(f))*100)
+			log.Printf("Saving images: %.2f \n", float64(i)/float64(len(f))*100)
 		}
 	}
 }
@@ -114,7 +105,7 @@ func runCommand(cmd *exec.Cmd) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Output %v\n", out.String())
+	log.Printf("Output %v\n", out.String())
 }
 
 func zoomOut(img *image.RGBA, bg *image.RGBA) []*image.RGBA {
